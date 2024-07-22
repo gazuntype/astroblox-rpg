@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using NaughtyAttributes;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class BattleManager : MonoBehaviour {
     public enum Team{A, B}
     public float battleTime => _battleTime;
+    public bool battleStarted => _battleStarted;
 
     [SerializeField]
     private GameObject agentPrefab;
@@ -20,6 +23,10 @@ public class BattleManager : MonoBehaviour {
     private GameObject battleScreen;
     [BoxGroup("Ui"), SerializeField]
     private GameObject hud;
+    [BoxGroup("Ui"), SerializeField]
+    private GameObject gameOverScreen;
+    [BoxGroup("Ui"), SerializeField]
+    private TMP_Text winner;
     
     [BoxGroup("Ui"), SerializeField]
     private TeamUi teamAUi;
@@ -83,5 +90,35 @@ public class BattleManager : MonoBehaviour {
         }
 
         return team;
+    }
+
+    public void HandleAgentDeath(Agent agent) {
+        if (agent.agentTeam == Team.A) {
+            _teamA.Remove(agent);
+            if (_teamA.Count <= 0) {
+                TriggerGameOver(Team.B);
+            }
+        } else {
+            _teamB.Remove(agent);
+            if (_teamB.Count <= 0) {
+                TriggerGameOver(Team.A);
+            }
+        }
+        Destroy(agent.gameObject);
+    }
+
+    private void TriggerGameOver(Team winningTeam) {
+        _battleStarted = false;
+        List<Agent> winners = winningTeam == Team.A ? _teamA : _teamB;
+        for (int i = 0; i < winners.Count; i++) {
+            winners[i].StopAllCoroutines();
+        }
+        hud.SetActive(false);
+        gameOverScreen.SetActive(true);
+        winner.text = winningTeam == Team.A ? "Team A Wins!" : "Team B Wins!";
+    }
+
+    public void RestartGame() {
+        SceneManager.LoadScene(0);
     }
 }

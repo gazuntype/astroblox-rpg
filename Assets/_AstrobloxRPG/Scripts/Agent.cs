@@ -10,19 +10,27 @@ using Random = UnityEngine.Random;
 public class Agent : MonoBehaviour {
     private const int HealValue = 5;
     private const int OTValue = 1;
-    private const int OTTotalTime = 5; //in seconds
-    private const int OTIntervalTime = 1; //in seconds
+    private const int OTTotalTime = 5;
+    private const int OTIntervalTime = 1;
+    private const int BuffTime = 3;
+    private const int BuffValue = 3;
+
+    public BattleManager.Team agentTeam => _team;
     public int currentHealth => _currentHealth;
     public int currentAttack => _currentAttack;
     public int currentDefense => _currentDefense;
     public int currentSpeed => _currentSpeed;
-    public enum ActionTypes {
+    public enum ActionType {
         Damage,
         DamageOverTime,
         Heal,
         HealOverTime,
-        Buff,
-        Debuff
+        SpeedBuff,
+        AttackBuff,
+        DefenseBuff,
+        SpeedDebuff,
+        AttackDebuff,
+        DefenseDebuff,
     }
 
     [SerializeField]
@@ -33,6 +41,18 @@ public class Agent : MonoBehaviour {
 
     [BoxGroup("Ui"), SerializeField]
     private MMProgressBar healthBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar speedBuffBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar attackBuffBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar defenseBuffBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar speedDebuffBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar attackDebuffBar;
+    [BoxGroup("Ui"), SerializeField]
+    private MMProgressBar defenseDebuffBar;
 
     [BoxGroup("Feedback"), SerializeField]
     private MMF_Player damageFeedback;
@@ -53,6 +73,12 @@ public class Agent : MonoBehaviour {
 
     private IEnumerator _activeDamageCoroutine;
     private IEnumerator _activeHealCoroutine;
+    private IEnumerator _activeSpeedBuffCoroutine;
+    private IEnumerator _activeAttackBuffCoroutine;
+    private IEnumerator _activeDefenseBuffCoroutine;
+    private IEnumerator _activeSpeedDebuffCoroutine;
+    private IEnumerator _activeAttackDebuffCoroutine;
+    private IEnumerator _activeDefenseDebuffCoroutine;
 
     public void InitializeAgent(BattleManager battleManager, AgentType type, BattleManager.Team team) {
         _battleManager = battleManager;
@@ -68,6 +94,7 @@ public class Agent : MonoBehaviour {
     }
 
     private void Update() {
+        if (!_battleManager.battleStarted) return;
         if (CanUseAction()) {
             _lastActionTime = _battleManager.battleTime;
             _waitTimeVariation = Random.Range(-0.2f, 0.2f);
@@ -84,45 +111,57 @@ public class Agent : MonoBehaviour {
     #region Perform Actions
 
     private void ChooseAction() {
-        int index = Random.Range(0, Enum.GetValues(typeof(ActionTypes)).Length);
-        switch ((ActionTypes)index) {
+        int index = Random.Range(0, Enum.GetValues(typeof(ActionType)).Length);
+        Agent target;
+        switch ((ActionType)index) {
             default:
-                DealDamage();
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveDamage(this);
                 break;
-            case ActionTypes.Heal:
-                Heal();
+            case ActionType.Damage:
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveDamage(this);
                 break;
-            case ActionTypes.Damage:
-                DealDamage();
+            case ActionType.Heal:
+                target = _battleManager.GetRandomTeammate(_team);
+                target.ReceiveHealing();
                 break;
-            case ActionTypes.DamageOverTime:
-                if (_activeDamageCoroutine != null) {
-                    StopCoroutine(_activeDamageCoroutine);
-                }
-
-                _activeDamageCoroutine = ReceiveDamageOverTime();
-                StartCoroutine(_activeDamageCoroutine);
+            case ActionType.DamageOverTime:
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveDamageOverTime();
                 break;
-            case ActionTypes.HealOverTime:
-                if (_activeHealCoroutine != null) {
-                    StopCoroutine(_activeHealCoroutine);
-                }
-
-                _activeHealCoroutine = ReceiveHealingOverTime();
-                StartCoroutine(_activeHealCoroutine);
+            case ActionType.HealOverTime:
+                target = _battleManager.GetRandomTeammate(_team);
+                target.ReceiveHealingOverTime();
                 break;
+            case ActionType.SpeedBuff:
+                target = _battleManager.GetRandomTeammate(_team);
+                target.ReceiveSpeedBuff();
+                break;
+            case ActionType.AttackBuff:
+                target = _battleManager.GetRandomTeammate(_team);
+                target.ReceiveAttackBuff();
+                break;
+            case ActionType.DefenseBuff:
+                target = _battleManager.GetRandomTeammate(_team);
+                target.ReceiveDefenseBuff();
+                break;
+            case ActionType.SpeedDebuff:
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveSpeedDebuff();
+                break;
+            case ActionType.AttackDebuff:
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveAttackDebuff();
+                break;
+            case ActionType.DefenseDebuff:
+                target = _battleManager.GetRandomOpponent(_team);
+                target.ReceiveDefenseDebuff();
+                break;
+            
         }
     }
-
-    private void DealDamage() {
-        Agent target = _battleManager.GetRandomOpponent(_team);
-        target.ReceiveDamage(this);
-    }
-
-    private void Heal() {
-        Agent target = _battleManager.GetRandomTeammate(_team);
-        target.ReceiveHealing();
-    }
+    
 
     #endregion
 
@@ -135,7 +174,16 @@ public class Agent : MonoBehaviour {
         damageFeedback.PlayFeedbacks();
     }
 
-    private IEnumerator ReceiveDamageOverTime() {
+    private void ReceiveDamageOverTime() {
+        if (_activeDamageCoroutine != null) {
+            StopCoroutine(_activeDamageCoroutine);
+        }
+
+        _activeDamageCoroutine = HandleDamageOverTime();
+        StartCoroutine(_activeDamageCoroutine);
+    }
+
+    private IEnumerator HandleDamageOverTime() {
         int time = 0;
         while (time < OTTotalTime) {
             yield return new WaitForSeconds(OTIntervalTime);
@@ -145,7 +193,21 @@ public class Agent : MonoBehaviour {
         }
     }
 
-    private IEnumerator ReceiveHealingOverTime() {
+    private void ReceiveHealing() {
+        AffectHealth(HealValue);
+        healFeedback.PlayFeedbacks();
+    }
+
+    private void ReceiveHealingOverTime() {
+        if (_activeHealCoroutine != null) {
+            StopCoroutine(_activeHealCoroutine);
+        }
+
+        _activeHealCoroutine = HandleHealingOverTime();
+        StartCoroutine(_activeHealCoroutine);
+    }
+    
+    private IEnumerator HandleHealingOverTime() {
         int time = 0;
         while (time < OTTotalTime) {
             yield return new WaitForSeconds(OTIntervalTime);
@@ -154,14 +216,115 @@ public class Agent : MonoBehaviour {
             time += OTIntervalTime;
         } 
     }
+    
+    //ToDo: Refactor these buffs and debuffs if you have time.
+    private void ReceiveSpeedBuff() {
+        if (_activeSpeedBuffCoroutine != null) {
+            StopCoroutine(_activeSpeedBuffCoroutine);
+            _currentSpeed = _agentType.InitialSpeed;
+        }
 
-    private void ReceiveHealing() {
-        AffectHealth(HealValue);
-        healFeedback.PlayFeedbacks();
+        _activeSpeedBuffCoroutine = HandleSpeedBuff(speedBuffBar, false);
+        StartCoroutine(_activeSpeedBuffCoroutine);
+    }
+    
+    private void ReceiveSpeedDebuff() {
+        if (_activeSpeedDebuffCoroutine != null) {
+            StopCoroutine(_activeSpeedDebuffCoroutine);
+            _currentSpeed = _agentType.InitialSpeed;
+        }
+
+        _activeSpeedDebuffCoroutine = HandleSpeedBuff(speedDebuffBar, true);
+        StartCoroutine(_activeSpeedDebuffCoroutine);
+    }
+    private IEnumerator HandleSpeedBuff(MMProgressBar bar, bool isDebuff) {
+        bar.gameObject.SetActive(true);
+        _currentSpeed += isDebuff? -BuffValue : BuffValue;
+        float time = BuffTime;
+        while (time > 0) {
+            bar.UpdateBar(time, 0, BuffTime);
+            time -= Time.deltaTime;
+            yield return null;
+        }
+
+        _currentSpeed = _agentType.InitialSpeed;
+        bar.gameObject.SetActive(false);
+    }
+    
+    private void ReceiveAttackBuff() {
+        if (_activeAttackBuffCoroutine != null) {
+            StopCoroutine(_activeAttackBuffCoroutine);
+            _currentAttack = _agentType.InitialAttack;
+        }
+
+        _activeAttackBuffCoroutine = HandleAttackBuff(attackBuffBar, false);
+        StartCoroutine(_activeAttackBuffCoroutine);
+    }
+    
+    private void ReceiveAttackDebuff() {
+        if (_activeAttackDebuffCoroutine != null) {
+            StopCoroutine(_activeAttackDebuffCoroutine);
+            _currentAttack = _agentType.InitialAttack;
+        }
+
+        _activeAttackDebuffCoroutine = HandleAttackBuff(attackDebuffBar, true);
+        StartCoroutine(_activeAttackDebuffCoroutine);
+    }
+    
+    private IEnumerator HandleAttackBuff(MMProgressBar bar, bool isDebuff) {
+        bar.gameObject.SetActive(true);
+        _currentAttack += isDebuff? -BuffValue : BuffValue;
+        float time = BuffTime;
+        while (time > 0) {
+            bar.UpdateBar(time, 0, BuffTime);
+            time -= Time.deltaTime;
+            yield return null;
+        }
+
+        _currentAttack = _agentType.InitialAttack;
+        bar.gameObject.SetActive(false);
+    }
+    
+    private void ReceiveDefenseBuff() {
+        if (_activeDefenseBuffCoroutine != null) {
+            StopCoroutine(_activeDefenseBuffCoroutine);
+            _currentDefense = _agentType.InitialDefense;
+        }
+
+        _activeDefenseBuffCoroutine = HandleDefenseBuff(defenseBuffBar, false);
+        StartCoroutine(_activeDefenseBuffCoroutine);
+    }
+    
+    private void ReceiveDefenseDebuff() {
+        if (_activeDefenseDebuffCoroutine != null) {
+            StopCoroutine(_activeDefenseDebuffCoroutine);
+            _currentDefense = _agentType.InitialDefense;
+        }
+
+        _activeDefenseDebuffCoroutine = HandleDefenseBuff(defenseDebuffBar, true);
+        StartCoroutine(_activeDefenseDebuffCoroutine);
+    }
+    
+    private IEnumerator HandleDefenseBuff(MMProgressBar bar, bool isDebuff) {
+        bar.gameObject.SetActive(true);
+        _currentDefense += isDebuff? -BuffValue : BuffValue;
+        float time = BuffTime;
+        while (time > 0) {
+            bar.UpdateBar(time, 0, BuffTime);
+            time -= Time.deltaTime;
+            yield return null;
+        }
+
+        _currentDefense = _agentType.InitialDefense;
+        bar.gameObject.SetActive(false);
     }
 
     private void AffectHealth(int val) {
         _currentHealth += val;
+        if (_currentHealth < 0) {
+            StopAllCoroutines();
+            _battleManager.HandleAgentDeath(this);
+        }
         _currentHealth = Mathf.Clamp(_currentHealth, 0, _agentType.InitialHealth);
         healthBar.UpdateBar(_currentHealth, 0, _agentType.InitialHealth);
     }
