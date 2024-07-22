@@ -1,0 +1,44 @@
+Astroblox Unity Take Home
+
+RPG Battle System!
+
+Task
+
+Develop a simple RPG battle system with a minimal UI interface
+This is an auto-battle system, so the battle runs without player control
+When we hit play in Unity the battle starts
+Battle runs until the players or enemies win (see Q4)
+The final output should be a runnable experience 🙂
+Spend 2 hours on this at minimum, and up to 4 if you want!
+
+Deliverables
+Please upload your code to a Git repo and share with kent@astroblox.ai
+Please record your development process, design choices and time spent on each section in the README of your repo
+
+Q1
+Battle agents
+Create a data model and class structure for agents
+There will be a configurable number of players in a party
+They will fight a configurable number of enemies
+All agents have shared stats: HP (health), attack, defense, speed (higher speed means less time to take an action)
+
+Q2
+Turn-based action system
+Time ticks throughout the battle
+Characters queue up actions to be executed based on their speed, in real time
+In this section we should create the overarching framework for this system, without worrying about the specifics of the actions
+Available actions should be configured per agent (see types below)
+
+Q3
+Action types and effects
+Damage: takes a target and a damage value based on attack. Needs to consider target defense. Players damage enemies and vice versa.
+Damage over time: deals a fixed amount of damage per time interval. Runs out after a certain amount of time
+Heal: takes a target and a heal value. Players heal each other and same with enemies
+Heal over time: heals a fixed amount per time interval. Runs out after a certain amount of time
+Buff: increases attack, defense or speed. Timed and will expire after a certain amount of time.
+Debuff: decreases attack, defense or speed. Timed and will expire after a certain amount of time.
+
+Q4
+Putting it together
+The battle should end when all the enemies are at 0HP or all the players are at 0HP
+Create a very simple UI for visualizing health and buff/debuffs along with their timers
