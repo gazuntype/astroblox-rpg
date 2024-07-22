@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Attack Lord
   m_EditorClassIdentifier: 
   agentName: Attack Lord
-  agentIcon: {fileID: 0}
+  agentIcon: {fileID: 21300000, guid: bdcaeec5459b7314781414725fab72cd, type: 3}
   initialHealth: 100
-  initialAttack: 80
-  initialDefense: 50
-  initialSpeed: 50
+  initialAttack: 20
+  initialDefense: 5
+  initialSpeed: 5

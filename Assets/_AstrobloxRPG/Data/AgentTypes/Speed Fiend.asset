@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Speed Fiend
   m_EditorClassIdentifier: 
   agentName: Speed Fiend
-  agentIcon: {fileID: 0}
+  agentIcon: {fileID: 21300000, guid: 86099d0e4a2251a42bed46a68e3222eb, type: 3}
   initialHealth: 100
-  initialAttack: 50
-  initialDefense: 50
-  initialSpeed: 80
+  initialAttack: 15
+  initialDefense: 5
+  initialSpeed: 8

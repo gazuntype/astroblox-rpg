@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Healthy One
   m_EditorClassIdentifier: 
   agentName: Healthy One
-  agentIcon: {fileID: 0}
+  agentIcon: {fileID: 21300000, guid: 93cf1c2a82d01e447add90c455ab94b2, type: 3}
   initialHealth: 120
-  initialAttack: 50
-  initialDefense: 50
-  initialSpeed: 50
+  initialAttack: 15
+  initialDefense: 5
+  initialSpeed: 5

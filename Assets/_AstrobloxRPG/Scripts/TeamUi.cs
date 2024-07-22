@@ -1,9 +1,10 @@
-using System;
 using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
 
 public class TeamUi : MonoBehaviour {
+    public List<AgentUi> agentUis => _agentUis;
+    
     [SerializeField, InfoBox("This is a list of the different agent types that can be used for this battle")]
     private AgentType[] availableAgentTypes;
     

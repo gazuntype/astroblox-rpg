@@ -9,13 +9,13 @@ public class AgentType : ScriptableObject {
     public int InitialAttack => initialAttack;
     public int InitialDefense => initialDefense;
     public int InitialSpeed => initialSpeed;
-    
+
     [SerializeField]
     private string agentName;
 
     [SerializeField]
     private Sprite agentIcon;
-    
+
     [BoxGroup("Agent Stats"), SerializeField]
     private int initialHealth;
     [BoxGroup("Agent Stats"), SerializeField]
